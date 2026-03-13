@@ -113,7 +113,7 @@ jobs:
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && success()
         run: |
           set -e
-          for image in quay.io/centos/centos:stream8 quay.io/centos/centos:stream9 fedora:latest; do
+          for image in rockylinux:8 rockylinux:9 fedora:latest; do
             echo "=== Install and run dynamic RPM on $image ==="
             docker run --rm \
               -v "${{ github.workspace }}/dist:/dist:ro" \
