@@ -1,6 +1,7 @@
 # RHEL 8–compatible build image for GoReleaser.
 # Building the dynamic binary here links it against glibc 2.28 so RPMs run on RHEL 8, RHEL 9, and Fedora.
-FROM quay.io/centos/centos:stream8
+# Use Rocky Linux 8 (CentOS Stream 8 mirrors are deprecated/unreachable in CI).
+FROM rockylinux:8
 
 RUN dnf install -y -q git make which curl tar && dnf clean all
 
