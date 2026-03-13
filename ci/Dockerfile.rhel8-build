@@ -15,8 +15,7 @@ ENV PATH="/usr/local/go/bin:${PATH}"
 # Docker client so GoReleaser can use the host's Docker daemon via socket mount
 RUN curl -sL https://download.docker.com/linux/static/stable/x86_64/docker-27.3.1.tgz | tar -C /usr/local/bin --strip-components=1 -xzf - docker/docker
 
-# Install GoReleaser
-ARG GORELEASER_VERSION=v2.8.2
+ARG GORELEASER_VERSION=v2.14.3
 RUN curl -sL "https://github.com/goreleaser/goreleaser/releases/download/${GORELEASER_VERSION}/goreleaser_Linux_x86_64.tar.gz" | tar -C /usr/local/bin -xzf -
 
 WORKDIR /src
