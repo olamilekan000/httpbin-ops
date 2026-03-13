@@ -1,0 +1,29 @@
+services:
+  httpbin:
+    build: .
+    image: httpbin:latest
+    environment:
+      HTTPBIN_PORT: ${HTTPBIN_PORT:-8088}
+    ports:
+      - "${HTTPBIN_PORT:-8088}:${HTTPBIN_PORT:-8088}"
+    command: ["sh", "-c", "exec /httpbin -port $$HTTPBIN_PORT"]
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wget -q -O - http://127.0.0.1:$$HTTPBIN_PORT/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  prometheus:
+    image: prom/prometheus:v3.0.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+    depends_on:
+      httpbin:
+        condition: service_healthy

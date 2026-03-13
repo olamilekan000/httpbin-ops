@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/TykTechnologies/tyk-devops-assignement/internal/handlers"
 	"github.com/TykTechnologies/tyk-devops-assignement/internal/middleware"
@@ -12,16 +13,19 @@ import (
 type Server struct {
 	httpServer *http.Server
 	mux        *http.ServeMux
+	buildInfo  *handlers.BuildInfo
 }
 
-// New creates a new Server instance
-func New(addr string) *Server {
+// New creates a new Server instance. buildInfo is injected at build time (ldflags) and exposed in /health.
+func New(addr string, buildInfo *handlers.BuildInfo) *Server {
 	mux := http.NewServeMux()
 	s := &Server{
-		mux: mux,
+		mux:       mux,
+		buildInfo: buildInfo,
 		httpServer: &http.Server{
-			Addr:    addr,
-			Handler: middleware.Logging(mux),
+			Addr:              addr,
+			Handler:           middleware.Metrics(middleware.Logging(mux)),
+			ReadHeaderTimeout: 10 * time.Second, // mitigate Slowloris
 		},
 	}
 
@@ -31,6 +35,9 @@ func New(addr string) *Server {
 
 // setupRoutes configures all the HTTP routes
 func (s *Server) setupRoutes() {
+	s.mux.HandleFunc("/health", handlers.HealthHandler(s.buildInfo))
+	s.mux.Handle("/metrics", middleware.MetricsHandler())
+
 	// HTTP method endpoints
 	s.mux.HandleFunc("/get", handlers.MethodHandler("GET"))
 	s.mux.HandleFunc("/post", handlers.MethodHandler("POST"))

@@ -1,0 +1,147 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  pull_request:
+    paths:
+      - .github/workflows/release.yml
+      - .goreleaser.yaml
+      - Dockerfile.release.*
+      - ci/
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  validate:
+    name: Test & Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - name: Run tests
+        run: go test -v -race -cover ./...
+
+      - name: golangci-lint
+        run: |
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+          golangci-lint run --timeout=5m ./...
+
+      - name: gosec
+        run: |
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          gosec -fmt=json -out=gosec-report.json ./...
+        continue-on-error: true
+
+      - name: Upload gosec report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gosec-report
+          path: gosec-report.json
+          if-no-files-found: ignore
+
+  release:
+    needs: [validate]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          username: olamilekan001
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set LDFLAGS
+        run: echo "LDFLAGS=$(make ldflags)" >> $GITHUB_ENV
+
+      - name: Build RHEL 8 build image
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        run: docker build -f ci/Dockerfile.rhel8-build -t rhel8-goreleaser .
+
+      - name: Prepare GPG key for package signing
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        run: |
+          echo "${{ secrets.GPG_SIGNING_KEY }}" > "$RUNNER_TEMP/gpg.key"
+          chmod 600 "$RUNNER_TEMP/gpg.key"
+          echo "GPG_KEY_PATH=$RUNNER_TEMP/gpg.key" >> $GITHUB_ENV
+
+      - name: Run GoReleaser (release, RHEL 8–compatible RPMs)
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/src" \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$HOME/.docker:/root/.docker:ro" \
+            -w /src \
+            -e GITHUB_TOKEN \
+            -e GPG_SIGNING_KEY \
+            -e NFPM_PASSPHRASE \
+            rhel8-goreleaser \
+            sh -c 'export LDFLAGS=$(make ldflags) && goreleaser release --clean'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
+          NFPM_PASSPHRASE: ${{ secrets.NFPM_PASSPHRASE }}
+
+      - name: "Smoke-test RPM: install and run on RHEL 8 / RHEL 9 / Fedora"
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && success()
+        run: |
+          set -e
+          for image in quay.io/centos/centos:stream8 quay.io/centos/centos:stream9 fedora:latest; do
+            echo "=== Install and run dynamic RPM on $image ==="
+            docker run --rm \
+              -v "${{ github.workspace }}/dist:/dist:ro" \
+              "$image" \
+              bash -c '
+                set -e
+                rpm=""
+                for f in /dist/httpbin-dynamic*x86_64*.rpm /dist/httpbin-dynamic*amd64*.rpm; do [ -f "$f" ] && rpm="$f" && break; done
+                [ -n "$rpm" ] || { echo "No dynamic RPM found in /dist"; exit 1; }
+                dnf install -y -q "$rpm"
+                httpbin -version
+              '
+          done
+
+      - name: Run GoReleaser
+        if: github.event_name == 'pull_request'
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          args: release --snapshot --clean --skip=sign
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: dist/
+          if-no-files-found: ignore

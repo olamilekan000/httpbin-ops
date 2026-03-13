@@ -11,7 +11,7 @@ func TestLoggingMiddleware(t *testing.T) {
 	// Create a test handler that returns 200
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("test response"))
+		_, _ = w.Write([]byte("test response"))
 	})
 
 	// Wrap with logging middleware
@@ -39,7 +39,7 @@ func TestLoggingMiddlewareWithError(t *testing.T) {
 	// Create a test handler that returns 500
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("error"))
+		_, _ = w.Write([]byte("error"))
 	})
 
 	// Wrap with logging middleware
@@ -66,8 +66,8 @@ func TestLoggingMiddlewareWithError(t *testing.T) {
 func TestLoggingMiddlewareMultipleWrites(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusCreated)
-		w.Write([]byte("part1"))
-		w.Write([]byte("part2"))
+		_, _ = w.Write([]byte("part1"))
+		_, _ = w.Write([]byte("part2"))
 	})
 
 	wrapped := Logging(handler)
@@ -120,7 +120,7 @@ func TestResponseWriterStatusCode(t *testing.T) {
 func TestResponseWriterImplicitOK(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Don't call WriteHeader explicitly
-		w.Write([]byte("test"))
+		_, _ = w.Write([]byte("test"))
 	})
 
 	wrapped := Logging(handler)

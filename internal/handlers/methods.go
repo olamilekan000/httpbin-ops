@@ -75,7 +75,7 @@ func getOriginIP(r *http.Request) string {
 func writeJSONResponse(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
+	_ = json.NewEncoder(w).Encode(data)
 }
 
 // writeJSONError writes a JSON error response

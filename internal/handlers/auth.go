@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"crypto/md5"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
@@ -167,15 +167,19 @@ func DigestAuthHandler(w http.ResponseWriter, r *http.Request) {
 // generateNonce generates a random nonce for digest auth
 func generateNonce() string {
 	b := make([]byte, 16)
-	rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		return ""
+	}
 	return hex.EncodeToString(b)
 }
 
-// generateOpaque generates a random opaque value for digest auth
+// generateOpaque generates a random opaque value for digest auth (SHA-256, FIPS-friendly)
 func generateOpaque() string {
 	b := make([]byte, 16)
-	rand.Read(b)
-	hash := md5.Sum(b)
+	if _, err := rand.Read(b); err != nil {
+		return ""
+	}
+	hash := sha256.Sum256(b)
 	return hex.EncodeToString(hash[:])
 }
 

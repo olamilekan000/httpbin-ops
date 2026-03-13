@@ -1,0 +1,26 @@
+# RHEL 8–compatible build image for GoReleaser.
+# Building the dynamic binary here links it against glibc 2.28 so RPMs run on RHEL 8, RHEL 9, and Fedora.
+FROM quay.io/centos/centos:stream8
+
+RUN dnf install -y -q git make which curl tar && dnf clean all
+
+# Install Go 1.25 (official tarball; stream8 has older Go in appstream)
+ARG GO_VERSION=1.25.8
+RUN curl -sL "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" | tar -C /usr/local -xzf - \
+    && echo 'PATH=/usr/local/go/bin:$PATH' > /etc/profile.d/go.sh
+
+ENV PATH="/usr/local/go/bin:${PATH}"
+
+# Docker client so GoReleaser can use the host's Docker daemon via socket mount
+RUN curl -sL https://download.docker.com/linux/static/stable/x86_64/docker-27.3.1.tgz | tar -C /usr/local/bin --strip-components=1 -xzf - docker/docker
+
+# Install GoReleaser
+ARG GORELEASER_VERSION=v2.8.2
+RUN curl -sL "https://github.com/goreleaser/goreleaser/releases/download/${GORELEASER_VERSION}/goreleaser_Linux_x86_64.tar.gz" | tar -C /usr/local/bin -xzf -
+
+WORKDIR /src
+
+# Entrypoint: optionally write GPG key from env, then run the given command
+COPY ci/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]

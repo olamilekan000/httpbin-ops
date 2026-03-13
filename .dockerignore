@@ -1,0 +1,10 @@
+.git
+.gitignore
+bin
+*.md
+docs
+coverage.out
+coverage.html
+.dockerignore
+docker-compose.yml
+prometheus.yml

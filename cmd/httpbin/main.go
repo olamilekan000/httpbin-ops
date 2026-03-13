@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/TykTechnologies/tyk-devops-assignement/internal/handlers"
 	"github.com/TykTechnologies/tyk-devops-assignement/internal/server"
 )
 
@@ -40,9 +41,9 @@ func main() {
 		os.Exit(0)
 	}
 
-	// Create server
 	addr := fmt.Sprintf("%s:%d", *host, *port)
-	srv := server.New(addr)
+	buildInfo := &handlers.BuildInfo{Version: version, Commit: commit, BuildTime: buildTime}
+	srv := server.New(addr, buildInfo)
 
 	// Start server in a goroutine
 	go func() {

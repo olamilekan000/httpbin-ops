@@ -8,6 +8,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/TykTechnologies/tyk-devops-assignement/internal/handlers"
 )
 
 // TestServerRouting tests that all routes are properly configured
@@ -40,7 +42,8 @@ func TestServerRouting(t *testing.T) {
 	}
 
 	// Create server
-	srv := New(":8080")
+	buildInfo := &handlers.BuildInfo{Version: "test", Commit: "test", BuildTime: "test"}
+	srv := New(":8080", buildInfo)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -62,7 +65,8 @@ func TestServerRouting(t *testing.T) {
 // TestServerIntegration tests the full server integration
 func TestServerIntegration(t *testing.T) {
 	// Create a test server
-	srv := New(":0")
+	buildInfo := &handlers.BuildInfo{Version: "test", Commit: "test", BuildTime: "test"}
+	srv := New(":0", buildInfo)
 	testServer := httptest.NewServer(srv.mux)
 	defer testServer.Close()
 
@@ -233,7 +237,8 @@ func TestServerIntegration(t *testing.T) {
 
 // TestServerGracefulShutdown tests that the server can shut down gracefully
 func TestServerGracefulShutdown(t *testing.T) {
-	srv := New(":0")
+	buildInfo := &handlers.BuildInfo{Version: "test", Commit: "test", BuildTime: "test"}
+	srv := New(":0", buildInfo)
 	testServer := httptest.NewServer(srv.mux)
 
 	// Make a request to ensure server is running
