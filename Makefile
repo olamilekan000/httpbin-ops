@@ -4,7 +4,7 @@
 BINARY_NAME=httpbin
 OUTPUT_DIR=bin
 MAIN_PATH=./cmd/httpbin
-GO=/usr/local/go/bin/go
+GO?=go
 LDFLAGS=-s -w
 
 # Build info
@@ -12,9 +12,12 @@ VERSION?=$(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 BUILD_TIME=$(shell date -u '+%Y-%m-%d_%H:%M:%S_UTC')
 COMMIT=$(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 
-.PHONY: all build build-static build test lint fmt vet clean
+.PHONY: all build build-static build test lint fmt vet clean ldflags
 
 all: build
+
+ldflags:
+	@echo "$(LDFLAGS) -X main.version=$(VERSION) -X main.buildTime=$(BUILD_TIME) -X main.commit=$(COMMIT)"
 
 build-static:
 	@echo "Building static binary (CGO_ENABLED=0)..."
@@ -25,7 +28,7 @@ build-static:
 		-o $(OUTPUT_DIR)/$(BINARY_NAME)-static \
 		$(MAIN_PATH)
 	@echo "Static binary built: $(OUTPUT_DIR)/$(BINARY_NAME)-static"
-	@ls -lh $(OUTPUT_DIR)/$(BINARY_NAME)
+	@ls -lh $(OUTPUT_DIR)/$(BINARY_NAME)-static
 
 build:
 	@echo "Building with CGO_ENABLED=1..."

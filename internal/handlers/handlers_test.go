@@ -583,3 +583,51 @@ func TestExtractRequestInfo(t *testing.T) {
 		t.Error("Expected headers to be captured")
 	}
 }
+
+func TestHealthHandler(t *testing.T) {
+	t.Run("with build info", func(t *testing.T) {
+		buildInfo := &BuildInfo{Version: "1.0.0", Commit: "abc123", BuildTime: "2025-01-01T00:00:00Z"}
+		handler := HealthHandler(buildInfo)
+		req := httptest.NewRequest("GET", "/health", nil)
+		rr := httptest.NewRecorder()
+		handler(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected status 200, got %d", rr.Code)
+		}
+		var out map[string]string
+		if err := json.NewDecoder(rr.Body).Decode(&out); err != nil {
+			t.Fatalf("invalid JSON: %v", err)
+		}
+		if out["status"] != "ok" {
+			t.Errorf("expected status=ok, got %q", out["status"])
+		}
+		if out["version"] != "1.0.0" {
+			t.Errorf("expected version=1.0.0, got %q", out["version"])
+		}
+		if out["commit"] != "abc123" {
+			t.Errorf("expected commit=abc123, got %q", out["commit"])
+		}
+		if out["build_time"] != "2025-01-01T00:00:00Z" {
+			t.Errorf("expected build_time=..., got %q", out["build_time"])
+		}
+	})
+	t.Run("without build info", func(t *testing.T) {
+		handler := HealthHandler(nil)
+		req := httptest.NewRequest("GET", "/health", nil)
+		rr := httptest.NewRecorder()
+		handler(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected status 200, got %d", rr.Code)
+		}
+		var out map[string]string
+		if err := json.NewDecoder(rr.Body).Decode(&out); err != nil {
+			t.Fatalf("invalid JSON: %v", err)
+		}
+		if out["status"] != "ok" {
+			t.Errorf("expected status=ok, got %q", out["status"])
+		}
+		if _, ok := out["version"]; ok {
+			t.Error("expected no version key when buildInfo is nil")
+		}
+	})
+}

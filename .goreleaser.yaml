@@ -1,0 +1,161 @@
+version: 2
+
+project_name: httpbin
+
+builds:
+  - id: httpbin-static
+    main: ./cmd/httpbin
+    binary: httpbin
+    ldflags:
+      - "{{ .Env.LDFLAGS }}"
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+
+  # Dynamic (CGO) only amd64: cross-compiling CGO to arm64 needs an arm64 toolchain on the runner.
+  - id: httpbin-dynamic
+    main: ./cmd/httpbin
+    binary: httpbin
+    ldflags:
+      - "{{ .Env.LDFLAGS }}"
+    env:
+      - CGO_ENABLED=1
+    goos:
+      - linux
+    goarch:
+      - amd64
+
+  # FIPS: same as static; for FIPS-validated output use a FIPS-approved Go toolchain (e.g. goboring).
+  - id: httpbin-fips
+    main: ./cmd/httpbin
+    binary: httpbin
+    ldflags:
+      - "{{ .Env.LDFLAGS }}"
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - id: httpbin-static
+    ids:
+      - httpbin-static
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}_static"
+    formats:
+      - tar.gz
+  - id: httpbin-dynamic
+    ids:
+      - httpbin-dynamic
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}_dynamic"
+    formats:
+      - tar.gz
+  - id: httpbin-fips
+    ids:
+      - httpbin-fips
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}_fips"
+    formats:
+      - tar.gz
+
+nfpms:
+  - id: httpbin-static
+    package_name: httpbin
+    ids:
+      - httpbin-static
+    maintainer: "Olalekan Odukoya <odukoyaonline@gmail.com>"
+    vendor: Olalekan Odukoya
+    description: "HTTP request and response service (statically linked)."
+    license: MIT
+    formats:
+      - deb
+      - rpm
+    deb:
+      signature:
+        key_file: '{{ index .Env "GPG_KEY_PATH" }}'
+    rpm:
+      signature:
+        key_file: '{{ index .Env "GPG_KEY_PATH" }}'
+  - id: httpbin-dynamic
+    package_name: httpbin-dynamic
+    ids:
+      - httpbin-dynamic
+    maintainer: "Olalekan Odukoya <odukoyaonline@gmail.com>"
+    vendor: Olalekan Odukoya
+    description: "HTTP request and response service (dynamically linked, glibc)."
+    license: MIT
+    formats:
+      - deb
+      - rpm
+    deb:
+      signature:
+        key_file: '{{ index .Env "GPG_KEY_PATH" }}'
+    rpm:
+      signature:
+        key_file: '{{ index .Env "GPG_KEY_PATH" }}'
+  - id: httpbin-fips
+    package_name: httpbin-fips
+    ids:
+      - httpbin-fips
+    maintainer: "Olalekan Odukoya <odukoyaonline@gmail.com>"
+    vendor: Olalekan Odukoya
+    description: "HTTP request and response service (FIPS build; use FIPS toolchain for compliance)."
+    license: MIT
+    formats:
+      - deb
+      - rpm
+    deb:
+      signature:
+        key_file: '{{ index .Env "GPG_KEY_PATH" }}'
+    rpm:
+      signature:
+        key_file: '{{ index .Env "GPG_KEY_PATH" }}'
+
+dockers_v2:
+  - id: httpbin-static
+    dockerfile: Dockerfile.release.static
+    ids:
+      - httpbin-static
+    images:
+      - 'ghcr.io/{{ index .Env "GITHUB_REPOSITORY" }}'
+      - "olamilekan001/httpbin"
+    tags:
+      - "{{ .Version }}-static"
+      - "{{ if not .Prerelease }}latest-static{{ end }}"
+    platforms:
+      - linux/amd64
+      - linux/arm64
+  - id: httpbin-dynamic
+    dockerfile: Dockerfile.release.dynamic
+    ids:
+      - httpbin-dynamic
+    images:
+      - 'ghcr.io/{{ index .Env "GITHUB_REPOSITORY" }}'
+      - "olamilekan001/httpbin"
+    tags:
+      - "{{ .Version }}-dynamic"
+      - "{{ if not .Prerelease }}latest-dynamic{{ end }}"
+    platforms:
+      - linux/amd64
+  - id: httpbin-fips
+    dockerfile: Dockerfile.release.static
+    ids:
+      - httpbin-fips
+    images:
+      - 'ghcr.io/{{ index .Env "GITHUB_REPOSITORY" }}'
+      - "olamilekan001/httpbin"
+    tags:
+      - "{{ .Version }}-fips"
+      - "{{ if not .Prerelease }}latest-fips{{ end }}"
+    platforms:
+      - linux/amd64
+      - linux/arm64
+
+release:
+  draft: true
+  mode: keep-existing

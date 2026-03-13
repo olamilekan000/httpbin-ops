@@ -4,6 +4,8 @@ A simple HTTP request and response service in Go, similar to [httpbin.org](https
 
 ## Features
 
+- **Health** — `GET /health` for liveness/readiness (includes version from build)
+- **Prometheus** — `GET /metrics` for request count and duration
 - **HTTP methods** — GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS
 - **Request inspection** — headers, IP, User-Agent
 - **Status codes** — fixed or weighted random
@@ -20,7 +22,7 @@ Server listens on `http://0.0.0.0:8088` by default. Try: `curl http://localhost:
 
 ## Requirements
 
-- Go 1.21+ (see `go.mod` for the exact version)
+- Go 1.25+ (see `go.mod` for the exact version)
 
 ## Building and testing
 
@@ -47,7 +49,72 @@ golangci-lint run ./... --timeout=5m
 
 Example: `./bin/httpbin -port 9000`
 
+## Docker
+
+Per the task specification, there are two image variants: **statically linked** (CGO_ENABLED=0) and **dynamically linked** (CGO_ENABLED=1).
+
+**Static (default Dockerfile):**
+```bash
+docker build -t httpbin:latest .
+docker run -p 8088:8088 httpbin:latest
+```
+
+**Dynamic (links against glibc; use Debian-based image):**
+```bash
+docker build -f Dockerfile.dynamic -t httpbin:dynamic .
+docker run -p 8088:8088 httpbin:dynamic
+```
+
+Port is configurable via `-port`:
+```bash
+docker run -p 9000:9000 httpbin:latest -port 9000
+```
+
+Run with Docker Compose (httpbin + Prometheus scraping `/metrics`):
+
+```bash
+docker compose up -d
+```
+
+Port is configurable with the `HTTPBIN_PORT` env var (default 8088). If you change it, update `prometheus.yml` so the scrape target port matches (e.g. `httpbin:9000`).
+
+```bash
+HTTPBIN_PORT=9000 docker compose up -d
+```
+
+- **httpbin** — http://localhost:8088 (or `http://localhost:${HTTPBIN_PORT}`)
+- **Prometheus** — http://localhost:9090 (scrapes httpbin at the configured port)
+
+## Releases
+
+On push of a version tag (`v*`), the [release workflow](.github/workflows/release.yml) runs [GoReleaser](https://goreleaser.com), which produces:
+
+- **Archives** — `tar.gz` for linux amd64/arm64 (static, dynamic, FIPS).
+- **DEB / RPM** — `.deb` and `.rpm` packages (Debian/Ubuntu and RHEL/Fedora). RPM archs use `x86_64` and `aarch64`. Three package variants: `httpbin` (static), `httpbin-dynamic`, `httpbin-fips`. **RPMs are built in a RHEL 8–compatible environment so they are installable and runnable on RHEL 8, RHEL 9, and latest Fedora.**
+- **Container images** (multi-arch `linux/amd64`, `linux/arm64`) on GitHub Container Registry:
+  - `ghcr.io/<owner>/<repo>:<version>-static` and `latest-static`
+  - `ghcr.io/<owner>/<repo>:<version>-dynamic` and `latest-dynamic`
+  - `ghcr.io/<owner>/<repo>:<version>-fips` and `latest-fips`
+
+**RPM (RHEL 8 / RHEL 9 / Fedora):** The release workflow builds binaries and RPMs inside a CentOS Stream 8 container so that the dynamic binary links against glibc 2.28. All generated RPMs (static, dynamic, FIPS) are installable and runnable on RHEL 8, RHEL 9, and latest Fedora.
+
+**FIPS:** The FIPS build uses the same source as the static build. For FIPS-validated compliance you must build with a FIPS-approved Go toolchain (e.g. BoringCrypto/Go FIPS) in your own pipeline; the release workflow provides the packaging and image layout.
+
 ## API endpoints
+
+### Health
+
+- **`GET /health`** — Returns 200 and JSON with `status`, `version`, `commit`, `build_time` (injected at build). Use for liveness/readiness.
+
+```bash
+curl http://localhost:8088/health
+```
+
+- **`GET /metrics`** — Prometheus metrics (request count, request duration, process metrics).
+
+```bash
+curl http://localhost:8088/metrics
+```
 
 ### HTTP methods
 

@@ -1,0 +1,10 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# Scrape port must match HTTPBIN_PORT in docker-compose (default 8088)
+scrape_configs:
+  - job_name: "httpbin"
+    static_configs:
+      - targets: ["httpbin:8088"]
+    metrics_path: /metrics
