@@ -6,6 +6,9 @@ FROM rockylinux:8
 RUN dnf install -y -q epel-release && \
     dnf install -y -q git make which curl tar \
     gcc-aarch64-linux-gnu gcc-c++-aarch64-linux-gnu binutils-aarch64-linux-gnu && \
+    mkdir -p /usr/aarch64-linux-gnu/sys-root && \
+    dnf install -y -q --installroot=/usr/aarch64-linux-gnu/sys-root --releasever=8 --arch=aarch64 \
+    glibc-devel glibc-static libgcc && \
     dnf clean all
 
 # Install Go 1.25 (official tarball; stream8 has older Go in appstream)
