@@ -6,6 +6,7 @@ FROM rockylinux:8
 RUN dnf install -y -q epel-release dnf-plugins-core && \
     dnf config-manager --set-enabled powertools && \
     dnf install -y -q git make which curl tar \
+    gcc gcc-c++ \
     gcc-aarch64-linux-gnu gcc-c++-aarch64-linux-gnu binutils-aarch64-linux-gnu && \
     mkdir -p /usr/aarch64-linux-gnu/sys-root && \
     dnf install -y -q --installroot=/usr/aarch64-linux-gnu/sys-root --releasever=8 --forcearch=aarch64 \
