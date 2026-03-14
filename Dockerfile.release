@@ -1,0 +1,15 @@
+ARG BASE_IMAGE=alpine:3.19
+FROM ${BASE_IMAGE}
+
+ARG TARGETPLATFORM
+RUN if command -v apk >/dev/null; then \
+        apk add --no-cache ca-certificates wget; \
+    else \
+        apt-get update && apt-get install -y --no-install-recommends ca-certificates wget && rm -rf /var/lib/apt/lists/*; \
+    fi
+
+COPY ${TARGETPLATFORM}/httpbin /httpbin
+
+EXPOSE 8088
+ENTRYPOINT ["/httpbin"]
+CMD ["-port", "8088"]

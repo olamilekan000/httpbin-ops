@@ -3,7 +3,10 @@
 # Use Rocky Linux 8 (CentOS Stream 8 mirrors are deprecated/unreachable in CI).
 FROM rockylinux:8
 
-RUN dnf install -y -q git make which curl tar && dnf clean all
+RUN dnf install -y -q epel-release && \
+    dnf install -y -q git make which curl tar \
+    gcc-aarch64-linux-gnu gcc-c++-aarch64-linux-gnu binutils-aarch64-linux-gnu && \
+    dnf clean all
 
 # Install Go 1.25 (official tarball; stream8 has older Go in appstream)
 ARG GO_VERSION=1.25.8

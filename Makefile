@@ -12,9 +12,9 @@ VERSION?=$(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 BUILD_TIME=$(shell date -u '+%Y-%m-%d_%H:%M:%S_UTC')
 COMMIT=$(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 
-.PHONY: all build build-static build test lint fmt vet clean ldflags
+.PHONY: all build build-static build-fips build test lint fmt vet clean ldflags
 
-all: build
+all: build build-static build-fips
 
 ldflags:
 	@echo "$(LDFLAGS) -X main.version=$(VERSION) -X main.buildTime=$(BUILD_TIME) -X main.commit=$(COMMIT)"
@@ -39,6 +39,17 @@ build:
 		$(MAIN_PATH)
 	@echo "CGO binary built: $(OUTPUT_DIR)/$(BINARY_NAME)"
 	@ls -lh $(OUTPUT_DIR)/$(BINARY_NAME)
+
+build-fips:
+	@echo "Building FIPS-compliant binary (GOEXPERIMENT=boringcrypto)..."
+	@mkdir -p $(OUTPUT_DIR)
+	GOEXPERIMENT=boringcrypto CGO_ENABLED=1 $(GO) build \
+		-tags fips \
+		-ldflags "$(LDFLAGS) -X main.version=$(VERSION) -X main.buildTime=$(BUILD_TIME) -X main.commit=$(COMMIT)" \
+		-o $(OUTPUT_DIR)/$(BINARY_NAME)-fips \
+		$(MAIN_PATH)
+	@echo "FIPS binary built: $(OUTPUT_DIR)/$(BINARY_NAME)-fips"
+	@ls -lh $(OUTPUT_DIR)/$(BINARY_NAME)-fips
 
 
 test:
