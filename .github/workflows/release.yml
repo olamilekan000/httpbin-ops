@@ -102,15 +102,15 @@ jobs:
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
         run: |
           docker run --rm \
-            -v "${{ github.workspace }}/..:/work" \
+            -v "${{ github.workspace }}:/app" \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v "$HOME/.docker:/root/.docker:ro" \
-            -w "/work/${{ github.event.repository.name }}" \
+            -w "/app" \
             -e GITHUB_TOKEN \
             -e GPG_SIGNING_KEY \
             -e NFPM_PASSPHRASE \
             rhel8-goreleaser \
-            sh -c 'export LDFLAGS=$(make ldflags) && goreleaser release --clean'
+            sh -c 'git config --global --add safe.directory /app && export LDFLAGS=$(make ldflags) && goreleaser release --clean'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
