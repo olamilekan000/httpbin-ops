@@ -83,11 +83,9 @@ nfpms:
     deb:
       signature:
         key_file: '{{ index .Env "GPG_KEY_PATH" }}'
-        passphrase: "{{ .Env.NFPM_PASSPHRASE }}"
     rpm:
       signature:
         key_file: '{{ index .Env "GPG_KEY_PATH" }}'
-        passphrase: "{{ .Env.NFPM_PASSPHRASE }}"
   - id: httpbin-dynamic
     package_name: httpbin-dynamic
     ids:
@@ -102,11 +100,9 @@ nfpms:
     deb:
       signature:
         key_file: '{{ index .Env "GPG_KEY_PATH" }}'
-        passphrase: "{{ .Env.NFPM_PASSPHRASE }}"
     rpm:
       signature:
         key_file: '{{ index .Env "GPG_KEY_PATH" }}'
-        passphrase: "{{ .Env.NFPM_PASSPHRASE }}"
   - id: httpbin-fips
     package_name: httpbin-fips
     ids:
@@ -121,11 +117,9 @@ nfpms:
     deb:
       signature:
         key_file: '{{ index .Env "GPG_KEY_PATH" }}'
-        passphrase: "{{ .Env.NFPM_PASSPHRASE }}"
     rpm:
       signature:
         key_file: '{{ index .Env "GPG_KEY_PATH" }}'
-        passphrase: "{{ .Env.NFPM_PASSPHRASE }}"
 
 dockers_v2:
   - id: httpbin-static

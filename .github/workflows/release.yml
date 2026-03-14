@@ -103,12 +103,14 @@ jobs:
         run: |
           docker run --rm \
             -v "${{ github.workspace }}:/app" \
+            -v "$RUNNER_TEMP:/tmp/gpg:ro" \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v "$HOME/.docker:/root/.docker:ro" \
             -w "/app" \
             -e GITHUB_TOKEN \
             -e GPG_SIGNING_KEY \
             -e NFPM_PASSPHRASE \
+            -e GPG_KEY_PATH=/tmp/gpg/gpg.key \
             rhel8-goreleaser \
             sh -c 'git config --global --add safe.directory /app && export LDFLAGS=$(make ldflags) && goreleaser release --clean'
         env:
