@@ -26,12 +26,12 @@ Server listens on `http://0.0.0.0:8088` by default. Try: `curl http://localhost:
 
 ## Building and testing
 
-| Command           | Description                    |
-|-------------------|--------------------------------|
-| `make build`      | Build dynamic binary → `bin/httpbin` |
+| Command             | Description                                |
+| ------------------- | ------------------------------------------ |
+| `make build`        | Build dynamic binary → `bin/httpbin`       |
 | `make build-static` | Build static binary → `bin/httpbin-static` |
-| `make test`       | Run tests (with race detector)  |
-| `make run`        | Build and run with defaults    |
+| `make test`         | Run tests (with race detector)             |
+| `make run`          | Build and run with defaults                |
 
 Lint (optional):
 
@@ -41,11 +41,11 @@ golangci-lint run ./... --timeout=5m
 
 ## Configuration
 
-| Flag      | Default   | Description              |
-|-----------|-----------|--------------------------|
-| `-host`   | `0.0.0.0` | Host to bind to          |
-| `-port`   | `8088`    | Port to bind to          |
-| `-version`| —         | Print version and exit   |
+| Flag       | Default   | Description            |
+| ---------- | --------- | ---------------------- |
+| `-host`    | `0.0.0.0` | Host to bind to        |
+| `-port`    | `8088`    | Port to bind to        |
+| `-version` | —         | Print version and exit |
 
 Example: `./bin/httpbin -port 9000`
 
@@ -53,19 +53,21 @@ Example: `./bin/httpbin -port 9000`
 
 Per the task specification, there are two image variants: **statically linked** (CGO_ENABLED=0) and **dynamically linked** (CGO_ENABLED=1).
 
-**Static (default Dockerfile):**
-```bash
-docker build -t httpbin:latest .
-docker run -p 8088:8088 httpbin:latest
-```
+**Local builds (using the unified `Dockerfile`):**
 
-**Dynamic (links against glibc; use Debian-based image):**
-```bash
-docker build -f Dockerfile.dynamic -t httpbin:dynamic .
-docker run -p 8088:8088 httpbin:dynamic
-```
+- **Dynamic (default):**
+
+  ```bash
+  docker build -t httpbin:latest .
+  ```
+
+- **Static (using Alpine):**
+  ```bash
+   docker build --build-arg CGO_ENABLED=0 --build-arg BUILDER_IMAGE=golang:1.25-alpine --build-arg RUN_IMAGE=alpine:3.19 -t httpbin:static .
+  ```
 
 Port is configurable via `-port`:
+
 ```bash
 docker run -p 9000:9000 httpbin:latest -port 9000
 ```
@@ -91,14 +93,42 @@ On push of a version tag (`v*`), the [release workflow](.github/workflows/releas
 
 - **Archives** — `tar.gz` for linux amd64/arm64 (static, dynamic, FIPS).
 - **DEB / RPM** — `.deb` and `.rpm` packages (Debian/Ubuntu and RHEL/Fedora). RPM archs use `x86_64` and `aarch64`. Three package variants: `httpbin` (static), `httpbin-dynamic`, `httpbin-fips`. **RPMs are built in a RHEL 8–compatible environment so they are installable and runnable on RHEL 8, RHEL 9, and latest Fedora.**
-- **Container images** (multi-arch `linux/amd64`, `linux/arm64`) on GitHub Container Registry:
-  - `ghcr.io/<owner>/<repo>:<version>-static` and `latest-static`
-  - `ghcr.io/<owner>/<repo>:<version>-dynamic` and `latest-dynamic`
-  - `ghcr.io/<owner>/<repo>:<version>-fips` and `latest-fips`
+- **Container images** (multi-arch `linux/amd64`, `linux/arm64`) on GitHub Container Registry (built via `Dockerfile.release`):
+  - `ghcr.io/<owner>/<repo>:<version>-static` and `latest-static` (Alpine based)
+  - `ghcr.io/<owner>/<repo>:<version>-dynamic` and `latest-dynamic` (Debian based)
+  - `ghcr.io/<owner>/<repo>:<version>-fips` and `latest-fips` (Alpine based)
 
 **RPM (RHEL 8 / RHEL 9 / Fedora):** The release workflow builds binaries and RPMs inside a CentOS Stream 8 container so that the dynamic binary links against glibc 2.28. All generated RPMs (static, dynamic, FIPS) are installable and runnable on RHEL 8, RHEL 9, and latest Fedora.
 
-**FIPS:** The FIPS build uses the same source as the static build. For FIPS-validated compliance you must build with a FIPS-approved Go toolchain (e.g. BoringCrypto/Go FIPS) in your own pipeline; the release workflow provides the packaging and image layout.
+**FIPS:** The FIPS build is compiled with **Go BoringCrypto** (`GOEXPERIMENT=boringcrypto`, Go 1.19+ on Linux amd64/arm64) and imports `crypto/tls/fipsonly` so TLS uses only FIPS-approved settings. The release workflow produces FIPS-oriented binaries, packages, and container images; for full FIPS 140-2 validation you must follow your organization’s certification process.
+
+#### Verifying FIPS compliance
+
+> [!IMPORTANT]
+> BoringCrypto symbols are only generated when building for **Linux** (amd64 or arm64). On macOS or Windows, the build will succeed but use standard Go crypto.
+
+To verify compliance:
+
+1. **Build for Linux** (using Docker if you are on macOS):
+
+   ```bash
+   docker run --rm -v $(pwd):/app -w /app golang:1.25 \
+     sh -c "GOEXPERIMENT=boringcrypto CGO_ENABLED=1 go build -tags fips -o httpbin-fips-linux ./cmd/httpbin && \
+            go tool nm httpbin-fips-linux | grep _Cfunc__goboringcrypto_"
+   ```
+
+2. **Check for symbols**:
+   If the binary is successfully linked with the FIPS-validated BoringSSL module, you will see output like this:
+
+   ```text
+   92ba28 D crypto/internal/boring._cgo_32f3ac20d4c4_Cfunc__goboringcrypto_BORINGSSL_bcm_power_on_self_test
+   92bbb0 D crypto/internal/boring._cgo_32f3ac20d4c4_Cfunc__goboringcrypto_HMAC_CTX_cleanup
+   92bc60 D crypto/internal/boring._cgo_32f3ac20d4c4_Cfunc__goboringcrypto_SHA256_Init
+   ...
+   ```
+
+3. **Runtime Verification**:
+   When running the FIPS binary, it will strictly enforce FIPS-only TLS algorithms. You can also check if the binary is using BoringCrypto at runtime by checking the `crypto/tls` behavior or using `GODEBUG=fipsdebug=1` (on supported Go versions) to see FIPS initialization details.
 
 ## API endpoints
 

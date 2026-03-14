@@ -1,26 +1,42 @@
-# Statically linked image (CGO_ENABLED=0) per task specification — one of two required variants (static + dynamic).
-# Build stage
-FROM golang:1.25-alpine AS builder
+ARG BUILDER_IMAGE=golang:1.25-bookworm
+ARG RUN_IMAGE=debian:bookworm-slim
+
+FROM ${BUILDER_IMAGE} AS builder
 WORKDIR /app
 
-RUN apk add --no-cache git ca-certificates
+RUN if command -v apk >/dev/null; then \
+        apk add --no-cache git ca-certificates; \
+    else \
+        apt-get update && apt-get install -y --no-install-recommends ca-certificates git && rm -rf /var/lib/apt/lists/*; \
+    fi
 
 COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
+
+ARG CGO_ENABLED=1
 ARG VERSION=dev
 ARG COMMIT=unknown
 ARG BUILD_TIME
-# Static binary: no CGO, runs on any Linux (e.g. Alpine, distroless)
-RUN CGO_ENABLED=0 go build -ldflags "-s -w -X main.version=${VERSION} -X main.buildTime=${BUILD_TIME} -X main.commit=${COMMIT}" -o /httpbin ./cmd/httpbin
+ARG GOFLAGS=""
 
-# Run stage (Alpine for small image + wget for healthcheck; run as non-root)
-FROM alpine:3.19
-RUN apk add --no-cache ca-certificates wget
-RUN adduser -D -u 65532 appuser
+RUN CGO_ENABLED=${CGO_ENABLED} go build \
+    -ldflags "-s -w -X main.version=${VERSION} -X main.buildTime=${BUILD_TIME} -X main.commit=${COMMIT}" \
+    -o /httpbin ./cmd/httpbin
+
+FROM ${RUN_IMAGE}
+
+RUN if command -v apk >/dev/null; then \
+        apk add --no-cache ca-certificates wget; \
+        adduser -D -u 65532 appuser; \
+    else \
+        apt-get update && apt-get install -y --no-install-recommends ca-certificates wget && rm -rf /var/lib/apt/lists/*; \
+        adduser --disabled-password --gecos '' --uid 65532 appuser; \
+    fi
+
 COPY --from=builder /httpbin /httpbin
-# Default port; override with -port or in compose via HTTPBIN_PORT
+
 EXPOSE 8088
 USER appuser
 ENTRYPOINT ["/httpbin"]

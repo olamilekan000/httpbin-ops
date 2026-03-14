@@ -16,7 +16,6 @@ builds:
       - amd64
       - arm64
 
-  # Dynamic (CGO) only amd64: cross-compiling CGO to arm64 needs an arm64 toolchain on the runner.
   - id: httpbin-dynamic
     main: ./cmd/httpbin
     binary: httpbin
@@ -24,19 +23,25 @@ builds:
       - "{{ .Env.LDFLAGS }}"
     env:
       - CGO_ENABLED=1
+      - CC={{ if eq .Arch "arm64" }}aarch64-linux-gnu-gcc{{ else }}gcc{{ end }}
+      - CXX={{ if eq .Arch "arm64" }}aarch64-linux-gnu-g++{{ else }}g++{{ end }}
     goos:
       - linux
     goarch:
       - amd64
+      - arm64
 
-  # FIPS: same as static; for FIPS-validated output use a FIPS-approved Go toolchain (e.g. goboring).
   - id: httpbin-fips
     main: ./cmd/httpbin
     binary: httpbin
     ldflags:
       - "{{ .Env.LDFLAGS }}"
     env:
-      - CGO_ENABLED=0
+      - CGO_ENABLED=1
+      - GOEXPERIMENT=boringcrypto
+      - GOFLAGS=-tags=fips
+      - CC={{ if eq .Arch "arm64" }}aarch64-linux-gnu-gcc{{ else }}gcc{{ end }}
+      - CXX={{ if eq .Arch "arm64" }}aarch64-linux-gnu-g++{{ else }}g++{{ end }}
     goos:
       - linux
     goarch:
@@ -118,7 +123,9 @@ nfpms:
 
 dockers_v2:
   - id: httpbin-static
-    dockerfile: Dockerfile.release.static
+    dockerfile: Dockerfile.release
+    build_args:
+      BASE_IMAGE: alpine:3.19
     ids:
       - httpbin-static
     images:
@@ -131,7 +138,9 @@ dockers_v2:
       - linux/amd64
       - linux/arm64
   - id: httpbin-dynamic
-    dockerfile: Dockerfile.release.dynamic
+    dockerfile: Dockerfile.release
+    build_args:
+      BASE_IMAGE: debian:bookworm-slim
     ids:
       - httpbin-dynamic
     images:
@@ -142,8 +151,11 @@ dockers_v2:
       - "{{ if not .Prerelease }}latest-dynamic{{ end }}"
     platforms:
       - linux/amd64
+      - linux/arm64
   - id: httpbin-fips
-    dockerfile: Dockerfile.release.static
+    dockerfile: Dockerfile.release
+    build_args:
+      BASE_IMAGE: alpine:3.19
     ids:
       - httpbin-fips
     images:
