@@ -108,11 +108,12 @@ jobs:
             -v "$HOME/.docker:/root/.docker:ro" \
             -w "/app" \
             -e GITHUB_TOKEN \
-            -e GPG_SIGNING_KEY \
             -e NFPM_PASSPHRASE \
-            -e GPG_KEY_PATH=/tmp/gpg/gpg.key \
+            -e NFPM_HTTPBIN_STATIC_PASSPHRASE="${{ secrets.NFPM_PASSPHRASE }}" \
+            -e NFPM_HTTPBIN_DYNAMIC_PASSPHRASE="${{ secrets.NFPM_PASSPHRASE }}" \
+            -e NFPM_HTTPBIN_FIPS_PASSPHRASE="${{ secrets.NFPM_PASSPHRASE }}" \
             rhel8-goreleaser \
-            sh -c 'git config --global --add safe.directory /app && export LDFLAGS=$(make ldflags) && goreleaser release --clean'
+            sh -c 'ls -l /tmp/gpg/gpg.key && git config --global --add safe.directory /app && export LDFLAGS=$(make ldflags) && goreleaser release --clean'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}

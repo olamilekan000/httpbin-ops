@@ -82,10 +82,10 @@ nfpms:
       - rpm
     deb:
       signature:
-        key_file: '{{ index .Env "GPG_KEY_PATH" }}'
+        key_file: /tmp/gpg/gpg.key
     rpm:
       signature:
-        key_file: '{{ index .Env "GPG_KEY_PATH" }}'
+        key_file: /tmp/gpg/gpg.key
   - id: httpbin-dynamic
     package_name: httpbin-dynamic
     ids:
@@ -99,10 +99,10 @@ nfpms:
       - rpm
     deb:
       signature:
-        key_file: '{{ index .Env "GPG_KEY_PATH" }}'
+        key_file: /tmp/gpg/gpg.key
     rpm:
       signature:
-        key_file: '{{ index .Env "GPG_KEY_PATH" }}'
+        key_file: /tmp/gpg/gpg.key
   - id: httpbin-fips
     package_name: httpbin-fips
     ids:
@@ -116,10 +116,10 @@ nfpms:
       - rpm
     deb:
       signature:
-        key_file: '{{ index .Env "GPG_KEY_PATH" }}'
+        key_file: /tmp/gpg/gpg.key
     rpm:
       signature:
-        key_file: '{{ index .Env "GPG_KEY_PATH" }}'
+        key_file: /tmp/gpg/gpg.key
 
 dockers_v2:
   - id: httpbin-static
