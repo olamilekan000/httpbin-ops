@@ -69,7 +69,7 @@ archives:
       - tar.gz
 
 nfpms:
-  - id: httpbin-static
+  - id: static
     package_name: httpbin
     ids:
       - httpbin-static
@@ -86,7 +86,7 @@ nfpms:
     rpm:
       signature:
         key_file: /tmp/gpg/gpg.key
-  - id: httpbin-dynamic
+  - id: dynamic
     package_name: httpbin-dynamic
     ids:
       - httpbin-dynamic
@@ -103,7 +103,7 @@ nfpms:
     rpm:
       signature:
         key_file: /tmp/gpg/gpg.key
-  - id: httpbin-fips
+  - id: fips
     package_name: httpbin-fips
     ids:
       - httpbin-fips
