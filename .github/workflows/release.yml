@@ -163,7 +163,7 @@ jobs:
                   
                   for f in $pattern; do [ -f "$f" ] && rpm="$f" && break; done
                   [ -n "$rpm" ] || { echo "No dynamic RPM found for $arch in /dist"; exit 1; }
-                  dnf install -y -q "$rpm"
+                  dnf install -y -q --nogpgcheck "$rpm"
                   httpbin -version
                 '
             done
