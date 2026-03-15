@@ -152,17 +152,19 @@ jobs:
             for image in rockylinux:8 rockylinux:9 fedora:latest; do
               echo "=== Install and run dynamic RPM ($arch) on $image ==="
               docker run --rm --platform linux/$arch \
+                -e ARCH=$arch \
                 -v "${{ github.workspace }}/dist:/dist:ro" \
                 "$image" \
                 bash -c '
                   set -e
                   rpm=""
-                  pattern="/dist/httpbin-dynamic*${arch}*.rpm"
-                  if [ "$arch" = "x86_64" ]; then pattern="$pattern /dist/httpbin-dynamic*amd64*.rpm"; fi
-                  if [ "$arch" = "aarch64" ]; then pattern="$pattern /dist/httpbin-dynamic*arm64*.rpm"; fi
+                  pattern="/dist/httpbin-dynamic*${ARCH}*.rpm"
+                  if [ "$ARCH" = "x86_64" ]; then pattern="$pattern /dist/httpbin-dynamic*amd64*.rpm"; fi
+                  if [ "$ARCH" = "aarch64" ]; then pattern="$pattern /dist/httpbin-dynamic*arm64*.rpm"; fi
                   
                   for f in $pattern; do [ -f "$f" ] && rpm="$f" && break; done
-                  [ -n "$rpm" ] || { echo "No dynamic RPM found for $arch in /dist"; exit 1; }
+                  [ -n "$rpm" ] || { echo "No dynamic RPM found for $ARCH in /dist. Files present:"; ls /dist; exit 1; }
+                  echo "Installing $rpm..."
                   rpm -ivh --nosignature "$rpm"
                   httpbin -version
                 '
