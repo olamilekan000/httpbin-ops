@@ -97,8 +97,8 @@ jobs:
           mkdir -p "$RUNNER_TEMP/gpg"
           printf "%s" "${{ secrets.GPG_SIGNING_KEY }}" > "$RUNNER_TEMP/gpg/gpg.key"
           chmod 600 "$RUNNER_TEMP/gpg/gpg.key"
-          # Verify file creation but not content
           if [ -s "$RUNNER_TEMP/gpg/gpg.key" ]; then echo "GPG key file created successfully"; else echo "GPG key file is EMPTY"; exit 1; fi
+          if [ -n "${{ secrets.NFPM_PASSPHRASE }}" ]; then echo "NFPM_PASSPHRASE is set"; else echo "NFPM_PASSPHRASE is NOT SET"; exit 1; fi
 
       - name: Run GoReleaser (release, RHEL 8–compatible RPMs)
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
@@ -111,15 +111,19 @@ jobs:
             -w "/app" \
             -e GITHUB_TOKEN \
             -e NFPM_PASSPHRASE \
-            -e NFPM_STATIC_PASSPHRASE="${{ secrets.NFPM_PASSPHRASE }}" \
-            -e NFPM_DYNAMIC_PASSPHRASE="${{ secrets.NFPM_PASSPHRASE }}" \
-            -e NFPM_FIPS_PASSPHRASE="${{ secrets.NFPM_PASSPHRASE }}" \
+            -e NFPM_STATIC_PASSPHRASE \
+            -e NFPM_DYNAMIC_PASSPHRASE \
+            -e NFPM_FIPS_PASSPHRASE \
             rhel8-goreleaser \
             sh -c 'ls -l /tmp/gpg/gpg.key && git config --global --add safe.directory /app && export LDFLAGS=$(make ldflags) && goreleaser release --clean'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
           NFPM_PASSPHRASE: ${{ secrets.NFPM_PASSPHRASE }}
+          NFPM_STATIC_PASSPHRASE: ${{ secrets.NFPM_PASSPHRASE }}
+          NFPM_DYNAMIC_PASSPHRASE: ${{ secrets.NFPM_PASSPHRASE }}
+          NFPM_FIPS_PASSPHRASE: ${{ secrets.NFPM_PASSPHRASE }}
+          GPG_PASSPHRASE: ${{ secrets.NFPM_PASSPHRASE }}
 
       - name: "Smoke-test RPM: install and run on RHEL 8 / RHEL 9 / Fedora (amd64 & arm64)"
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && success()
