@@ -169,5 +169,5 @@ dockers_v2:
       - linux/arm64
 
 release:
-  draft: true
-  mode: keep-existing
+  draft: false
+  mode: replace
