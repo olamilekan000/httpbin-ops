@@ -93,12 +93,20 @@ jobs:
 
       - name: Prepare GPG key for package signing
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        env:
+          GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
+          NFPM_PASSPHRASE: ${{ secrets.NFPM_PASSPHRASE }}
         run: |
           mkdir -p "$RUNNER_TEMP/gpg"
-          printf "%s" "${{ secrets.GPG_SIGNING_KEY }}" > "$RUNNER_TEMP/gpg/gpg.key"
+          printf "%s" "$GPG_SIGNING_KEY" > "$RUNNER_TEMP/gpg/gpg.key"
           chmod 600 "$RUNNER_TEMP/gpg/gpg.key"
           if [ -s "$RUNNER_TEMP/gpg/gpg.key" ]; then echo "GPG key file created successfully"; else echo "GPG key file is EMPTY"; exit 1; fi
-          if [ -n "${{ secrets.NFPM_PASSPHRASE }}" ]; then echo "NFPM_PASSPHRASE is set"; else echo "NFPM_PASSPHRASE is NOT SET"; exit 1; fi
+          if [ -n "$NFPM_PASSPHRASE" ]; then 
+            echo "NFPM_PASSPHRASE is present (length: ${#NFPM_PASSPHRASE})"
+          else 
+            echo "NFPM_PASSPHRASE is EMPTY or NOT SET"
+            exit 1
+          fi
 
       - name: Run GoReleaser (release, RHEL 8–compatible RPMs)
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
@@ -114,8 +122,9 @@ jobs:
             -e NFPM_STATIC_PASSPHRASE \
             -e NFPM_DYNAMIC_PASSPHRASE \
             -e NFPM_FIPS_PASSPHRASE \
+            -e GPG_PASSPHRASE \
             rhel8-goreleaser \
-            sh -c 'ls -l /tmp/gpg/gpg.key && git config --global --add safe.directory /app && export LDFLAGS=$(make ldflags) && goreleaser release --clean'
+            sh -c 'ls -l /tmp/gpg/gpg.key && [ -n "$NFPM_PASSPHRASE" ] && echo "Passphrase seen in container" || echo "Passphrase NOT seen in container" && git config --global --add safe.directory /app && export LDFLAGS=$(make ldflags) && goreleaser release --clean'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
