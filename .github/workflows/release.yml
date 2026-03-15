@@ -115,9 +115,10 @@ jobs:
             -v "${{ github.workspace }}:/app" \
             -v "$RUNNER_TEMP/gpg:/tmp/gpg:ro" \
             -v /var/run/docker.sock:/var/run/docker.sock \
-            -v "$HOME/.docker:/root/.docker:ro" \
+            -v "$HOME/.docker:/root/.docker" \
             -w "/app" \
             -e GITHUB_TOKEN \
+            -e GITHUB_REPOSITORY \
             -e NFPM_PASSPHRASE \
             -e NFPM_STATIC_PASSPHRASE \
             -e NFPM_DYNAMIC_PASSPHRASE \
@@ -127,6 +128,7 @@ jobs:
             sh -c 'ls -l /tmp/gpg/gpg.key && [ -n "$NFPM_PASSPHRASE" ] && echo "Passphrase seen in container" || echo "Passphrase NOT seen in container" && git config --global --add safe.directory /app && export LDFLAGS=$(make ldflags) && goreleaser release --clean'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
           GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
           NFPM_PASSPHRASE: ${{ secrets.NFPM_PASSPHRASE }}
           NFPM_STATIC_PASSPHRASE: ${{ secrets.NFPM_PASSPHRASE }}
