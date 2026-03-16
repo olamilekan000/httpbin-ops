@@ -29,7 +29,6 @@ RUN curl -sL "https://github.com/goreleaser/goreleaser/releases/download/${GOREL
 
 WORKDIR /src
 
-# Entrypoint: optionally write GPG key from env, then run the given command
 COPY ci/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
