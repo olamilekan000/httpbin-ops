@@ -12,6 +12,14 @@ A simple HTTP request and response service in Go, similar to [httpbin.org](https
 - **Delays** — configurable response delay (max 10s)
 - **Auth** — Basic, Bearer token, Digest (simplified)
 
+## Links
+
+- **[Docker Hub Tags](https://hub.docker.com/r/olamilekan001/httpbin/tags)**
+- **[GitHub Container Registry](https://github.com/olamilekan000/httpbin-ops/pkgs/container/httpbin-ops/versions)**
+- **[Latest Release (v0.1.27)](https://github.com/olamilekan000/httpbin-ops/releases/tag/v0.1.27)**
+- **[All Releases](https://github.com/olamilekan000/httpbin-ops/releases)**
+- **[Helm Chart](./httpbin-ops-charts)**
+
 ## Quick start
 
 ```bash
@@ -92,6 +100,7 @@ HTTPBIN_PORT=9000 docker compose up -d
 The application exports Prometheus metrics on `/metrics`. When running with Docker Compose, Prometheus is pre-configured to scrape these metrics every 15 seconds.
 
 Key metrics include:
+
 - `http_request_duration_seconds`: Histogram of request latencies.
 - `http_requests_total`: Counter of total HTTP requests.
 - Standard Go process metrics (memory, GC, etc.).
