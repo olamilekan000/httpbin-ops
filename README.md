@@ -87,6 +87,22 @@ HTTPBIN_PORT=9000 docker compose up -d
 - **httpbin** — http://localhost:8088 (or `http://localhost:${HTTPBIN_PORT}`)
 - **Prometheus** — http://localhost:9090 (scrapes httpbin at the configured port)
 
+## Helm
+
+A Helm chart is available in the `httpbin-ops-charts` directory.
+
+To install the chart:
+
+```bash
+helm install httpbin ./httpbin-ops-charts
+```
+
+By default, it uses the `latest-static` image. You can specify a different variant using `--set image.tag`:
+
+```bash
+helm install httpbin ./httpbin-ops-charts --set image.tag=latest-fips
+```
+
 ## Releases
 
 On push of a version tag (`v*`), the [release workflow](.github/workflows/release.yml) runs [GoReleaser](https://goreleaser.com), which produces:
@@ -99,6 +115,11 @@ On push of a version tag (`v*`), the [release workflow](.github/workflows/releas
   - `ghcr.io/<owner>/<repo>:<version>-fips` and `latest-fips` (Alpine based)
 
 **RPM (RHEL 8 / RHEL 9 / Fedora):** The release workflow builds binaries and RPMs inside a CentOS Stream 8 container so that the dynamic binary links against glibc 2.28. All generated RPMs (static, dynamic, FIPS) are installable and runnable on RHEL 8, RHEL 9, and latest Fedora.
+
+To test this manually on your machine:
+
+1.  Generate a local snapshot release: `make snapshot`
+2.  Run the smoke test: `make smoke-test-rpm`
 
 **FIPS:** The FIPS build is compiled with **Go BoringCrypto** (`GOEXPERIMENT=boringcrypto`, Go 1.19+ on Linux amd64/arm64) and imports `crypto/tls/fipsonly` so TLS uses only FIPS-approved settings. The release workflow produces FIPS-oriented binaries, packages, and container images; for full FIPS 140-2 validation you must follow your organization’s certification process.
 

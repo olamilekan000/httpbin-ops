@@ -1,3 +1,4 @@
 bin
 *.vimbak
 *.vimorig
+dist

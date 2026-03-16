@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "httpbin-ops-charts.fullname" . }}
+  labels:
+    {{- include "httpbin-ops-charts.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "httpbin-ops-charts.selectorLabels" . | nindent 4 }}

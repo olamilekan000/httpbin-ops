@@ -8,3 +8,4 @@ coverage.html
 .dockerignore
 docker-compose.yml
 prometheus.yml
+httpbin-ops-charts
