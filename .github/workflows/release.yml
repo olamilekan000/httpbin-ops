@@ -5,6 +5,14 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g. v1.0.0)'
+        required: false
+      branch:
+        description: 'Branch to release from'
+        required: false
+        default: 'main'
   pull_request:
     paths:
       - .github/workflows/release.yml
@@ -176,6 +184,25 @@ jobs:
                 '
             done
           done
+
+      - name: "Smoke-test DEB: install and run on Debian stable/oldstable (amd64 & arm64)"
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && success()
+        run: |
+          set -e
+          for arch in amd64 arm64; do
+            for image in debian:bullseye debian:bookworm; do
+              echo "=== Install and run dynamic DEB ($arch) on $image ==="
+              docker run --rm --platform linux/$arch \
+                -e ARCH=$arch \
+                -v "${{ github.workspace }}/dist:/dist:ro" \
+                "$image" \
+                bash -c '
+                  apt-get update && apt-get install -y ./dist/httpbin-dynamic*_linux_${ARCH}.deb
+                  httpbin -version
+                '
+            done
+          done
+
 
       - name: Run GoReleaser
         if: github.event_name == 'pull_request'

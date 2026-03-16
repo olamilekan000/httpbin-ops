@@ -159,7 +159,7 @@ dockers_v2:
   - id: httpbin-fips
     dockerfile: Dockerfile.release
     build_args:
-      BASE_IMAGE: alpine:3.19
+      BASE_IMAGE: debian:bookworm-slim
     ids:
       - httpbin-fips
     images:
