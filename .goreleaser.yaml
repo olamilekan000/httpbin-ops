@@ -133,6 +133,8 @@ dockers_v2:
       - "olamilekan001/httpbin"
     tags:
       - "{{ .Version }}-static"
+      - "{{ .Major }}-static"
+      - "{{ .Major }}.{{ .Minor }}-static"
       - "{{ if not .Prerelease }}latest-static{{ end }}"
     platforms:
       - linux/amd64
@@ -148,6 +150,8 @@ dockers_v2:
       - "olamilekan001/httpbin"
     tags:
       - "{{ .Version }}-dynamic"
+      - "{{ .Major }}-dynamic"
+      - "{{ .Major }}.{{ .Minor }}-dynamic"
       - "{{ if not .Prerelease }}latest-dynamic{{ end }}"
     platforms:
       - linux/amd64
@@ -163,6 +167,8 @@ dockers_v2:
       - "olamilekan001/httpbin"
     tags:
       - "{{ .Version }}-fips"
+      - "{{ .Major }}-fips"
+      - "{{ .Major }}.{{ .Minor }}-fips"
       - "{{ if not .Prerelease }}latest-fips{{ end }}"
     platforms:
       - linux/amd64
