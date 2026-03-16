@@ -85,7 +85,16 @@ HTTPBIN_PORT=9000 docker compose up -d
 ```
 
 - **httpbin** — http://localhost:8088 (or `http://localhost:${HTTPBIN_PORT}`)
-- **Prometheus** — http://localhost:9090 (scrapes httpbin at the configured port)
+- **Prometheus UI** — http://localhost:9090 (scrapes httpbin at the configured port)
+
+### Monitoring & Metrics
+
+The application exports Prometheus metrics on `/metrics`. When running with Docker Compose, Prometheus is pre-configured to scrape these metrics every 15 seconds.
+
+Key metrics include:
+- `http_request_duration_seconds`: Histogram of request latencies.
+- `http_requests_total`: Counter of total HTTP requests.
+- Standard Go process metrics (memory, GC, etc.).
 
 ## Helm
 
